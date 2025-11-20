@@ -23,6 +23,17 @@ from . import ops
 from .modules import SparseModule
 from .structure import SparseConvTensor
 
+del CONV_LAYERS._module_dict['SparseConv2d']
+del CONV_LAYERS._module_dict['SparseConv3d']
+del CONV_LAYERS._module_dict['SparseConv4d']
+del CONV_LAYERS._module_dict['SparseConvTranspose2d']
+del CONV_LAYERS._module_dict['SparseConvTranspose3d']
+del CONV_LAYERS._module_dict['SparseInverseConv2d']
+del CONV_LAYERS._module_dict['SparseInverseConv3d']
+del CONV_LAYERS._module_dict['SubMConv2d']
+del CONV_LAYERS._module_dict['SubMConv3d']
+del CONV_LAYERS._module_dict['SubMConv4d']
+
 
 def _calculate_fan_in_and_fan_out_hwio(tensor):
     dimensions = tensor.ndimension()
