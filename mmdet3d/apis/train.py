@@ -15,6 +15,7 @@ from mmdet3d.utils import get_root_logger
 from mmdet.core import DistEvalHook
 from mmdet.datasets import build_dataloader, build_dataset, replace_ImageToTensor
 
+from mmdet3d.profiler_hooks.profiler_hook import MyProfilerHook
 
 def train_model(
     model,
@@ -98,6 +99,11 @@ def train_model(
     )
     if isinstance(runner, EpochBasedRunner):
         runner.register_hook(DistSamplerSeedHook())
+        if cfg.profiler_hooks.profile:
+            log_dir = cfg.profiler_hooks.log_dir
+            profile_step_start = cfg.profiler_hooks.profile_step_start
+            profile_step_end = cfg.profiler_hooks.profile_step_end
+            runner.register_hook(MyProfilerHook(log_dir, profile_step_start, profile_step_end), cfg.profiler_hooks.priority)
 
     # register eval hooks
     if validate:

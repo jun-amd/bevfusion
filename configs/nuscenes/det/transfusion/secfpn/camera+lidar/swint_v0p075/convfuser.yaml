@@ -4,3 +4,10 @@ model:
     in_channels: [80, 256]
     out_channels: 256
 
+profiler_hooks:
+  type: MyProfilerHook
+  log_dir: ./profiler_logs
+  profile_step_start: 60
+  profile_step_end: 62
+  priority: VERY_HIGH
+  profile: False
