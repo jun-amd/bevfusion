@@ -103,11 +103,24 @@ class BaseTransform(nn.Module):
         # undo post-transformation
         # B x N x D x H x W x 3
         points = self.frustum - post_trans.view(B, N, 1, 1, 1, 3)
-        points = (
-            torch.inverse(post_rots)
-            .view(B, N, 1, 1, 1, 3, 3)
-            .matmul(points.unsqueeze(-1))
-        )
+        
+        #################################
+        points_matmul1 = points
+        post_rots_reverse =  torch.inverse(post_rots)
+        post_rots_reverse_view = post_rots_reverse.view(-1,3,3)
+        points_matmul1 = points_matmul1.unsqueeze(-1)
+        a1,b1,c1,d1,e1,f1,g1 = points_matmul1.shape
+        points_view1 = points_matmul1.view(a1*b1, c1*d1*e1, f1*g1)
+        output1 = post_rots_reverse_view.matmul(points_view1.permute(0,2,1))
+        points = output1.permute(0,2,1).view(a1,b1,c1,d1,e1,f1,g1)
+
+        #################################
+
+        #points = (
+        #    torch.inverse(post_rots)
+        #    .view(B, N, 1, 1, 1, 3, 3)
+        #    .matmul(points.unsqueeze(-1))
+        #)
         # cam_to_lidar
         points = torch.cat(
             (
@@ -117,17 +130,33 @@ class BaseTransform(nn.Module):
             5,
         )
         combine = camera2lidar_rots.matmul(torch.inverse(intrins))
-        points = combine.view(B, N, 1, 1, 1, 3, 3).matmul(points).squeeze(-1)
+        #points = combine.view(B, N, 1, 1, 1, 3, 3).matmul(points).squeeze(-1)
+
+        ###################################
+        combine_view = combine.view(-1, 3, 3)
+        a3,b3,c3,d3,e3,f3,g3 = points.shape
+        points3_view = points.view(a3*b3, c3*d3*e3, f3*g3)
+        output3 = combine_view.matmul(points3_view.permute(0, 2, 1))
+        points = output3.permute(0,2,1).view(a3,b3,c3,d3,e3,f3,g3).squeeze(-1)
+        ###################################
+
         points += camera2lidar_trans.view(B, N, 1, 1, 1, 3)
 
         if "extra_rots" in kwargs:
             extra_rots = kwargs["extra_rots"]
-            points = (
-                extra_rots.view(B, 1, 1, 1, 1, 3, 3)
-                .repeat(1, N, 1, 1, 1, 1, 1)
-                .matmul(points.unsqueeze(-1))
-                .squeeze(-1)
-            )
+
+            points_a = points
+            a2,b2,c2,d2,e2,f2 = points_a.shape
+            points_a_view = points_a.reshape(a2,b2*c2*d2*e2,f2)
+            output2 = extra_rots.matmul(points_a_view.permute(0,2,1))
+            points = output2.permute(0,2,1).view(a2,b2,c2,d2,e2,f2)
+
+            #points = (
+            #    extra_rots.view(B, 1, 1, 1, 1, 3, 3)
+            #    .repeat(1, N, 1, 1, 1, 1, 1)
+            #    .matmul(points.unsqueeze(-1))
+            #    .squeeze(-1)
+            #)
         if "extra_trans" in kwargs:
             extra_trans = kwargs["extra_trans"]
             points += extra_trans.view(B, 1, 1, 1, 1, 3).repeat(1, N, 1, 1, 1, 1)
@@ -147,7 +176,7 @@ class BaseTransform(nn.Module):
 
         # flatten indices
         geom_feats = ((geom_feats - (self.bx - self.dx / 2.0)) / self.dx).long()
-        geom_feats = geom_feats.view(Nprime, 3)
+        geom_feats = geom_feats.reshape(Nprime, 3)
         batch_ix = torch.cat(
             [
                 torch.full([Nprime // B, 1], ix, device=x.device, dtype=torch.long)
