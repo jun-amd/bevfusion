@@ -116,11 +116,11 @@ struct CreateSubMIndicePairFunctor<tv::GPU, Index, IndexGrid, NDim> {
         <<<tv::launch::getBlocks(numActIn), tv::launch::CUDA_NUM_THREADS, 0,
            d.getStream()>>>(indicesIn, gridsOut, outSpatialShape);
     TV_CHECK_CUDA_ERR();
-    getSubMIndicePairsKernel<Index, IndexGrid, NDim, 4096>
-        <<<tv::launch::getBlocks(numActIn), tv::launch::CUDA_NUM_THREADS, 0,
-           d.getStream()>>>(indicesIn, gridsOut, indicePairs, indiceNum,
-                            kernelSize, stride, padding, dilation,
-                            outSpatialShape);
+    getSubMIndicePairsKernel<Index, IndexGrid, NDim, 4096, 1024>
+        <<<(numActIn + 255) / 256, 256,
+           (4096 + 4096 + 1024 * 3) * sizeof(Index), d.getStream()>>>(
+            indicesIn, gridsOut, indicePairs, indiceNum, kernelSize, stride,
+            padding, dilation, outSpatialShape);
     TV_CHECK_CUDA_ERR();
     // std::cout << "subm gene time " << timer.report() / 1000.0 << std::endl;
     if (resetGrid) {
